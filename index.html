@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阅读笔记分享卡片生成器</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=Noto+Serif+SC:wght@400;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- 主题切换按钮 -->
+    <button class="button secondary-button theme-toggle" onclick="toggleTheme()">切换主题</button>
+
+    <div class="main-container">
+        <!-- 左侧输入区域 -->
+        <div class="input-section">
+            <div class="style-selector">
+                <div class="style-options">
+                    <button class="style-option active" data-style="default">默认样式</button>
+                    <button class="style-option" data-style="gradient">渐变风格</button>
+                </div>
+            </div>
+            <input type="text" class="input-textarea" id="nicknameInput" placeholder="请输入您分享时需要展现的昵称" style="height: 50px; margin-bottom: 10px;">
+            <textarea class="input-textarea" id="inputTextarea" placeholder="请输入需要分享的为卡片内容的文字……" oninput="updatePreview()"></textarea>
+            <div class="button-group">
+                <button class="button primary-button" onclick="shareCard()">分享卡片</button>
+                <button class="button primary-button" onclick="saveAsImage()">保存图片</button>
+            </div>
+        </div>
+
+        <!-- 右侧预览区域 -->
+        <div class="preview-section">
+            <div class="card-page" id="cardPage">
+                <div class="inspiration-card resizable">
+                    <div class="card-content" id="cardContent"></div>
+                    <div class="card-date" id="cardDate"></div>
+                    <div class="card-nickname" id="cardNickname"></div>
+                    <div class="resize-handle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
