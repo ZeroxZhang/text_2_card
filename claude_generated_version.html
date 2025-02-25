@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Note Card Generator</title>
+    <!-- 添加字体链接 -->
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime&family=Noto+Serif+SC:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- 添加html2canvas库用于图片导出 -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        :root {
+            /* Default theme (Light) - 增加渐变 */
+            --bg-primary: #f5f5f7;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --accent-color: #0071e3;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --border-color: rgba(0, 0, 0, 0.06);
+            --card-gradient: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(245, 245, 250, 0.8), rgba(240, 240, 255, 0.7));
+            
+            /* Typography */
+            --font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            --font-en: 'Courier Prime', monospace;
+            --font-cn: 'Noto Serif SC', serif;
+            --font-size-base: 16px;
+            --line-height: 1.6;
+            
+            /* 优化卡片文字排版变量 */
+            --card-font-size: 0.95rem;      /* 略微小一点的字体大小 */
+            --card-letter-spacing: 0.02em;  /* 字间距略微增加 */
+            --card-line-height: 1.85;       /* 行间距略微增加 */
+            --paragraph-indent: 2em;        /* 段落首行缩进 */
+            
+            /* Spacing */
+            --spacing-xs: 0.5rem;
+            --spacing-sm: 1rem;
+            --spacing-md: 1.5rem;
+            --spacing-lg: 2rem;
+            --spacing-xl: 3rem;
+            
+            /* Animation */
+            --transition-speed: 0.3s;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #000000;
+            --bg-card: rgba(30, 30, 32, 0.85);
+            --text-primary: #f5f5f7;
+            --text-secondary: #a1a1a6;
+            --accent-color: #2997ff;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --card-gradient: linear-gradient(145deg, rgba(40, 40, 45, 0.9), rgba(28, 28, 30, 0.7));
+        }
+
+        [data-theme="warm"] {
+            --bg-primary: #fbf7f2;
+            --bg-card: rgba(255, 250, 245, 0.85);
+            --text-primary: #3a2618;
+            --text-secondary: #8d7966;
+            --accent-color: #c87941;
+            --shadow-color: rgba(138, 100, 75, 0.1);
+            --border-color: rgba(138, 100, 75, 0.08);
+            --card-gradient: linear-gradient(145deg, rgba(255, 246, 235, 0.9), rgba(252, 240, 228, 0.7));
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-primary);
+            font-size: var(--font-size-base);
+            line-height: var(--line-height);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: var(--spacing-md);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px; /* 增大最大宽度以适应分屏 */
+            margin: 0 auto;
+            padding: var(--spacing-md);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .header p {
+            color: var(--text-secondary);
+        }
+
+        .theme-switcher {
+            display: flex;
+            justify-content: center;
+            margin-bottom: var(--spacing-md);
+            gap: var(--spacing-sm);
+        }
+
+        .theme-button {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 0.4rem 1rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            color: var(--text-secondary);
+        }
+
+        .theme-button:hover, .theme-button.active {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        /* 重新设计主要内容布局为分屏 */
+        .main-content {
+            display: flex;
+            flex-direction: row;
+            gap: var(--spacing-lg);
+            margin-top: var(--spacing-lg);
+        }
+
+        /* 左侧输入区域 */
+        .input-section {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .input-form {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .input-group label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .input-field {
+            padding: var(--spacing-sm);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            font-family: var(--font-primary);
+            transition: all var(--transition-speed) ease;
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb, 0, 113, 227), 0.3);
+        }
+
+        textarea.input-field {
+            min-height: 250px;
+            resize: vertical;
+        }
+
+        .submit-button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: var(--spacing-sm);
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            margin-top: var(--spacing-xs);
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(var(--accent-color-rgb, 0, 113, 227), 0.3);
+        }
+
+        .submit-button:active {
+            transform: translateY(0);
+        }
+
+        /* 右侧卡片预览区域 */
+        .card-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        .note-card {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-gradient);
+            border-radius: 20px;
+            padding: var(--spacing-lg);
+            box-shadow: 0 8px 30px var(--shadow-color);
+            position: relative;
+            overflow: hidden;
+            transition: all var(--transition-speed) ease;
+            border: 1px solid var(--border-color);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            transform: translateY(0);
+        }
+
+        .note-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px var(--shadow-color);
+        }
+
+        /* 优化卡片文字排版 */
+        .note-content {
+            font-size: var(--card-font-size); /* 略微小一点的字体大小 */
+            line-height: var(--card-line-height); /* 增加行高，提供更好的呼吸感 */
+            letter-spacing: var(--card-letter-spacing); /* 增加字间距 */
+            margin-bottom: var(--spacing-lg);
+            white-space: pre-wrap;
+            /* 字体将在JavaScript中根据内容动态设置 */
+            
+            /* 增加段落间距 */
+            text-align: justify;
+            text-justify: inter-word;
+            
+            /* 优化文本渲染 */
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* 段落样式 - 新增 */
+        .note-content p {
+            margin-bottom: 0.8em;
+        }
+
+        .note-content p:first-child {
+            margin-top: 0;
+        }
+
+        .note-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* 段落首行缩进 - 新增 */
+        .note-content p {
+            text-indent: var(--paragraph-indent);
+        }
+
+        /* 针对不同语言的特定排版调整 */
+        .note-content.en-text {
+            /* 英文特定排版 */
+            font-weight: 400;
+            word-spacing: 0.05em; /* 英文单词间距微调 */
+        }
+
+        .note-content.cn-text {
+            /* 中文特定排版 */
+            font-weight: 300;
+            line-height: 1.9; /* 中文需要稍微更大的行高 */
+            letter-spacing: 0.05em; /* 中文需要更大的字间距 */
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: var(--spacing-md);
+            color: var(--text-secondary);
+            font-size: 0.85rem; /* 略微小一点的页脚字体 */
+            letter-spacing: 0.01em; /* 轻微增加字间距 */
+        }
+
+        /* 更新导出按钮样式 */
+        .export-buttons {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-md);
+        }
+
+        .export-button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: 20px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+        }
+
+        .export-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(var(--accent-color-rgb, 0, 113, 227), 0.2);
+        }
+
+        .export-button:active {
+            transform: translateY(0);
+        }
+
+        .export-button i {
+            font-size: 1.1em;
+        }
+
+        /* 导出进度指示器 */
+        .export-progress {
+            display: none;
+            margin-top: var(--spacing-sm);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        /* Loading animation */
+        .loader {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(var(--accent-color-rgb, 0, 113, 227), 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-color);
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Micro-animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease forwards;
+        }
+
+        /* 简单图标字体 */
+        .icon {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            position: relative;
+        }
+
+        .icon-download::before {
+            content: '↓';
+        }
+
+        .icon-copy::before {
+            content: '⎘';
+        }
+
+        /* Media queries - 响应式处理 */
+        @media (max-width: 900px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .note-card {
+                margin-top: var(--spacing-lg);
+            }
+            
+            .export-buttons {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .note-card {
+                padding: var(--spacing-md);
+            }
+
+            .header h1 {
+                font-size: 1.7rem;
+            }
+
+            .note-content {
+                font-size: calc(var(--card-font-size) - 0.05rem); /* 移动设备上稍微调小字体 */
+            }
+        }
+
+        /* 空卡片提示样式 */
+        .empty-card-message {
+            color: var(--text-secondary);
+            text-align: center;
+            font-style: italic;
+            padding: var(--spacing-md);
+        }
+
+        /* 增加语言提示样式 */
+        .language-indicator {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: var(--spacing-xs);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .language-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header fade-in">
+            <h1>Premium Note Card Generator</h1>
+            <p>Transform your thoughts into beautifully designed cards</p>
+        </div>
+
+        <div class="theme-switcher fade-in">
+            <button class="theme-button active" data-theme="light">Light</button>
+            <button class="theme-button" data-theme="dark">Dark</button>
+            <button class="theme-button" data-theme="warm">Warm</button>
+        </div>
+
+        <!-- 重新设计为分屏布局 -->
+        <div class="main-content">
+            <!-- 左侧输入区域 -->
+            <div id="input-section" class="input-section fade-in">
+                <form class="input-form" id="note-form">
+                    <div class="input-group">
+                        <label for="nickname">Your Nickname</label>
+                        <input type="text" id="nickname" class="input-field" placeholder="Enter your nickname" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="note-content">Your Note</label>
+                        <textarea id="note-content" class="input-field" placeholder="Enter your reading notes, quotes, or extracts..." required></textarea>
+                        <div class="language-indicator">
+                            <span class="language-dot"></span>
+                            <span id="language-text">Auto-detected language: English</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-button">Create Card</button>
+                </form>
+            </div>
+
+            <!-- 右侧卡片预览区域 -->
+            <div id="card-section" class="card-section">
+                <div class="note-card" id="note-card">
+                    <div id="note-text" class="note-content empty-card-message">Your note will appear here as you type...</div>
+                    <div class="card-footer">
+                        <div id="card-author">Your name</div>
+                        <div id="card-date"></div>
+                    </div>
+                </div>
+                
+                <!-- 新的导出按钮组 -->
+                <div class="export-buttons">
+                    <button class="export-button" id="download-button">
+                        <span class="icon icon-download"></span> Download as PNG
+                    </button>
+                    <button class="export-button" id="copy-button">
+                        <span class="icon icon-copy"></span> Copy to Clipboard
+                    </button>
+                </div>
+                
+                <!-- 导出进度指示器 -->
+                <div class="export-progress" id="export-progress">Processing...</div>
+            </div>
+        </div>
+
+        <div class="loader" id="loader"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM elements
+            const themeButtons = document.querySelectorAll('.theme-button');
+            const noteForm = document.getElementById('note-form');
+            const noteTextarea = document.getElementById('note-content');
+            const nicknameInput = document.getElementById('nickname');
+            const noteText = document.getElementById('note-text');
+            const cardAuthor = document.getElementById('card-author');
+            const cardDate = document.getElementById('card-date');
+            const downloadButton = document.getElementById('download-button');
+            const copyButton = document.getElementById('copy-button');
+            const loader = document.getElementById('loader');
+            const languageText = document.getElementById('language-text');
+            const exportProgress = document.getElementById('export-progress');
+            const noteCard = document.getElementById('note-card');
+            
+            // Set current date on load
+            const date = new Date();
+            const formattedDate = new Intl.DateTimeFormat('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            }).format(date);
+            cardDate.textContent = formattedDate;
+            
+            // Theme switching
+            themeButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons
+                    themeButtons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    button.classList.add('active');
+                    
+                    // Set theme
+                    document.documentElement.setAttribute('data-theme', button.getAttribute('data-theme'));
+                });
+            });
+            
+            // 检测文本是否包含中文字符
+            function containsChinese(text) {
+                return /[\u4e00-\u9fa5]/.test(text);
+            }
+            
+            // 格式化段落，添加首行缩进
+            function formatContentWithIndent(content) {
+                // 如果内容为空，返回空字符串
+                if (!content.trim()) return '';
+                
+                // 分割成段落
+                const paragraphs = content.split(/\n\s*\n|\n{2,}/);
+                
+                // 将每个段落包裹在<p>标签中
+                const formattedParagraphs = paragraphs.map(paragraph => {
+                    // 忽略空段落
+                    if (!paragraph.trim()) return '';
+                    
+                    // 处理单行段落（可能包含单个换行符）
+                    const lines = paragraph.split(/\n/);
+                    const processedParagraph = lines.join('<br>');
+                    
+                    return `<p>${processedParagraph}</p>`;
+                });
+                
+                // 连接所有段落
+                return formattedParagraphs.join('');
+            }
+            
+            // 实时更新预览卡片和语言检测
+            noteTextarea.addEventListener('input', function() {
+                const content = this.value;
+                
+                // 更新卡片内容
+                if (content.trim() === '') {
+                    noteText.innerHTML = 'Your note will appear here as you type...';
+                    noteText.classList.add('empty-card-message');
+                    // 重置语言类
+                    noteText.classList.remove('en-text', 'cn-text');
+                } else {
+                    const formattedHTML = formatContentWithIndent(content);
+                    noteText.innerHTML = formattedHTML;
+                    noteText.classList.remove('empty-card-message');
+                    
+                    // 检测语言并设置字体与特定语言类
+                    if (containsChinese(content)) {
+                        noteText.style.fontFamily = 'var(--font-cn)';
+                        languageText.textContent = 'Auto-detected language: Chinese';
+                        noteText.classList.remove('en-text');
+                        noteText.classList.add('cn-text');
+                    } else {
+                        noteText.style.fontFamily = 'var(--font-en)';
+                        languageText.textContent = 'Auto-detected language: English';
+                        noteText.classList.remove('cn-text');
+                        noteText.classList.add('en-text');
+                    }
+                }
+                
+                // 调整卡片高度
+                noteCard.style.minHeight = Math.max(150, content.length / 3) + 'px';
+            });
+            
+            // 实时更新作者名称
+            nicknameInput.addEventListener('input', function() {
+                const nickname = this.value;
+                if (nickname.trim() === '') {
+                    cardAuthor.textContent = 'Your name';
+                } else {
+                    cardAuthor.textContent = nickname;
+                }
+            });
+            
+            // Form submission - 保留完整表单提交功能
+            noteForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Show loader briefly to indicate processing
+                loader.style.display = 'block';
+                
+                // Get form values
+                const nickname = nicknameInput.value;
+                const content = noteTextarea.value;
+                
+                // Simulate processing delay
+                setTimeout(() => {
+                    // Hide loader
+                    loader.style.display = 'none';
+                    
+                    // Alert user that card is created
+                    alert('Card created successfully! You can now download or copy it.');
+                }, 500);
+            });
+            
+            // 将卡片导出为PNG图片并下载
+            downloadButton.addEventListener('click', function() {
+                // 检查卡片是否为空
+                if (noteTextarea.value.trim() === '') {
+                    alert('Please enter some content before exporting.');
+                    return;
+                }
+                
+                // 显示进度指示器
+                exportProgress.textContent = 'Creating image...';
+                exportProgress.style.display = 'block';
+                
+                // 使用html2canvas捕获卡片
+                html2canvas(noteCard, {
+                    scale: 2, // 使用2倍比例提高清晰度
+                    useCORS: true,
+                    backgroundColor: null // 透明背景
+                }).then(canvas => {
+                    // 转换为图片并下载
+                    const imgData = canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.href = imgData;
+                    
+                    // 创建文件名 (使用昵称，如果没有则使用日期)
+                    const nickname = nicknameInput.value.trim() || 'note';
+                    const fileName = `${nickname}_card_${new Date().toISOString().slice(0,10)}.png`;
+                    
+                    link.download = fileName;
+                    link.click();
+                    
+                    // 隐藏进度指示器
+                    exportProgress.style.display = 'none';
+                }).catch(error => {
+                    console.error('Error exporting image:', error);
+                    exportProgress.textContent = 'Error creating image. Please try again.';
+                    setTimeout(() => {
+                        exportProgress.style.display = 'none';
+                    }, 3000);
+                });
+            });
+            
+            // 将卡片复制到剪贴板
+            copyButton.addEventListener('click', function() {
+                // 检查卡片是否为空
+                if (noteTextarea.value.trim() === '') {
+                    alert('Please enter some content before copying.');
+                    return;
+                }
+                
+                // 显示进度指示器
+                exportProgress.textContent = 'Copying to clipboard...';
+                exportProgress.style.display = 'block';
+                
+                // 使用html2canvas捕获卡片
+                html2canvas(noteCard, {
+                    scale: 2, // 使用2倍比例提高清晰度
+                    useCORS: true,
+                    backgroundColor: null // 透明背景
+                }).then(canvas => {
+                    // 处理Canvas数据
+                    canvas.toBlob(function(blob) {
+                        try {
+                            // 尝试使用现代剪贴板API
+                            const clipboardItem = new ClipboardItem({ 'image/png': blob });
+                            navigator.clipboard.write([clipboardItem]).then(() => {
+                                exportProgress.textContent = 'Copied to clipboard!';
+                                setTimeout(() => {
+                                    exportProgress.style.display = 'none';
+                                }, 2000);
+                            }).catch(err => {
+                                // 现代API失败时回退到传统方法
+                                fallbackCopy(canvas);
+                            });
+                        } catch (e) {
+                            // 如果ClipboardItem不可用，使用回退方法
+                            fallbackCopy(canvas);
+                        }
+                    });
+                }).catch(error => {
+                    console.error('Error copying image:', error);
+                    exportProgress.textContent = 'Error copying image. Please try again.';
+                    setTimeout(() => {
+                        exportProgress.style.display = 'none';
+                    }, 3000);
+                });
+            });
+            
+            // 复制图片的回退方法
+            function fallbackCopy(canvas) {
+                // 在页面上创建一个临时的img元素
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL('image/png');
+                
+                // 临时添加到文档中，选择它，然后尝试复制
+                img.style.position = 'fixed';
+                img.style.opacity = '0';
+                document.body.appendChild(img);
+                
+                // 创建一个范围和选择
+                const range = document.createRange();
+                range.selectNode(img);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                try {
+                    // 尝试使用document.execCommand复制
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        exportProgress.textContent = 'Copied to clipboard!';
+                    } else {
+                        exportProgress.textContent = 'Copy failed. Try downloading instead.';
+                    }
+                } catch (err) {
+                    exportProgress.textContent = 'Copy failed. Try downloading instead.';
+                }
+                
+                // 清理
+                selection.removeAllRanges();
+                document.body.removeChild(img);
+                
+                setTimeout(() => {
+                    exportProgress.style.display = 'none';
+                }, 2000);
+            }
+            
+            // Add random floating shapes for background interest
+            function createBackgroundElements() {
+                const container = document.body;
+                const numElements = 5;
+                
+                for (let i = 0; i < numElements; i++) {
+                    const element = document.createElement('div');
+                    element.style.position = 'fixed';
+                    element.style.width = `${Math.random() * 200 + 50}px`;
+                    element.style.height = element.style.width;
+                    element.style.borderRadius = '50%';
+                    element.style.background = `radial-gradient(circle, var(--accent-color) 0%, transparent 70%)`;
+                    element.style.opacity = '0.05';
+                    element.style.left = `${Math.random() * 100}vw`;
+                    element.style.top = `${Math.random() * 100}vh`;
+                    element.style.zIndex = '-1';
+                    element.style.filter = 'blur(40px)';
+                    element.style.transform = 'translate(-50%, -50%)';
+                    element.style.transition = 'all 10s ease-in-out';
+                    
+                    container.appendChild(element);
+                    
+                    // Animate the elements
+                    setInterval(() => {
+                        element.style.left = `${Math.random() * 100}vw`;
+                        element.style.top = `${Math.random() * 100}vh`;
+                    }, 10000);
+                }
+            }
+            
+            createBackgroundElements();
+        });
+    </script>
+</body>
+</html>
